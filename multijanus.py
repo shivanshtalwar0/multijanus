@@ -7,17 +7,18 @@ from subprocess import PIPE
 import os
 
 port_mapping = {
-    8188: 'http_admin',
-    7088: 'websocket',
+    7088: 'http_admin',
+    8188: 'websocket',
     7188: 'websocket_admin',
     8088: 'http',
     80:'http_server'
 }
 
-run_template = '''docker run --name "{name}_{index}" -it -d -p {http_admin}:8188/tcp -p {http_admin}:8188/udp -p {websocket}:7088 -p {websocket_admin}:7188/tcp -p {websocket_admin}:7188/udp -p {http}:8088 shivanshtalwar0/janusgateway'''
+run_template = '''docker run --name "{name}_{index}" -it -d -p {http_admin}:7088 -p {websocket_admin}:7188/tcp -p {websocket_admin}:7188/udp -p {http}:8088 -p {websocket}:8188/tcp -p {websocket}:8188/udp shivanshtalwar0/janusgateway'''
 
 delete_template = '''docker rm $(docker ps -aq --filter name={name}_*)'''
-start_janus = "docker exec {name}_{index} /opt/janus/bin/janus -b --log-file januslogfile"
+
+start_janus = "docker exec {name}_{index} /opt/janus/bin/janus -b --log-file januslogfile -a SecureIt"
 
 
 def start_janus_server(Name, index):
@@ -62,9 +63,9 @@ def start_containers(Name, instances):
             joutput, jerror = start_janus_server(name, i)
             print(joutput)
             print('''
-                        http_api\t=>\thttp://127.0.0.1:{http}\n
+                        http_api\t=>\thttp://127.0.0.1:{http}/janus\n
                         websocket_api\t=>\tws://127.0.0.1:{websocket}\n
-                        http_admin_api\t=>\thttp://127.0.0.1{http_admin}\n
+                        http_admin_api\t=>\thttp://127.0.0.1:{http_admin}/admin\n
                         websocket_admin_api\t=>\tws://127.0.0.1:{websocket_admin}\n                        
                         '''.format(http=http, http_admin=http_admin, websocket=websocket,
                                    websocket_admin=websocket_admin))
@@ -113,8 +114,13 @@ elif (action == 'list'):
             ports = b.split('->')
             iport = int(ports[-1].split('/')[0])
             target_url = ports[0]
+            endpoint=''
+            if port_mapping[iport].startswith('http') and port_mapping[iport].endswith('admin'):
+                endpoint='/admin'
+            if port_mapping[iport]=='http':
+                endpoint='/janus'  
             urls.update(
-                {port_mapping[iport]: ('http://' if port_mapping[iport].startswith('http') else 'wss://') + target_url})
+                {port_mapping[iport]: ('http://' if port_mapping[iport].startswith('http') else 'wss://') + target_url+endpoint})
         result.append({'name': a[0], 'urls': urls})
     print(result)
 
