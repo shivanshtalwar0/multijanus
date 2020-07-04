@@ -8,8 +8,8 @@ Please note this script assumes you are running your janus instance with default
 configuration that is default port number for http,websocket and admin api. 
 
 http=>8088  
-websocket=>7088  
-admin http=>8188  
+websocket=>8188  
+admin http=>71088  
 admin websocket=>7188
 
 # Usage
